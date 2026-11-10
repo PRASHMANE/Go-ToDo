@@ -11,6 +11,7 @@ import (
 	pkgconfig "github.com/PRASHMANE/Go-ToDo/pkg/config"
 	"github.com/PRASHMANE/Go-ToDo/pkg/database"
 	pkgevents "github.com/PRASHMANE/Go-ToDo/pkg/events"
+	"github.com/PRASHMANE/Go-ToDo/pkg/health"
 	"github.com/PRASHMANE/Go-ToDo/pkg/httpserver"
 	"github.com/PRASHMANE/Go-ToDo/pkg/logger"
 	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/config"
@@ -43,6 +44,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	deps := map[string]health.Pinger{} // checked by /readyz
 	var repo service.TodoRepository
 	if cfg.DatabaseURL != "" {
 		pool, err := database.NewPostgresPool(ctx, cfg.DatabaseURL)
@@ -51,6 +53,7 @@ func run() error {
 		}
 		defer pool.Close()
 		repo = repository.NewPostgresTodoRepository(pool)
+		deps["db"] = pool
 		log.Info("using postgres repository")
 	} else {
 		repo = repository.NewMemoryTodoRepository()
@@ -68,6 +71,7 @@ func run() error {
 			return err
 		}
 		pub = todoevents.NewJetStreamPublisher(js, log)
+		deps["nats"] = pkgevents.ConnPinger{NC: nc}
 		log.Info("publishing events to nats", "url", cfg.NATSURL)
 	} else {
 		log.Warn("NATS_URL not set, events disabled")
@@ -76,6 +80,6 @@ func run() error {
 	svc := service.NewTodoService(repo, pub)
 	todoHandler := handler.NewTodoHandler(svc, log)
 
-	r := router.New(log, cfg.GinMode, todoHandler)
+	r := router.New(log, cfg.GinMode, todoHandler, deps)
 	return httpserver.Run(ctx, log, ":"+cfg.Port, r)
 }

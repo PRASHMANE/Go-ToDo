@@ -13,6 +13,7 @@ import (
 	pkgconfig "github.com/PRASHMANE/Go-ToDo/pkg/config"
 	"github.com/PRASHMANE/Go-ToDo/pkg/database"
 	pkgevents "github.com/PRASHMANE/Go-ToDo/pkg/events"
+	"github.com/PRASHMANE/Go-ToDo/pkg/health"
 	"github.com/PRASHMANE/Go-ToDo/pkg/httpserver"
 	"github.com/PRASHMANE/Go-ToDo/pkg/logger"
 	"github.com/PRASHMANE/Go-ToDo/services/activity-service/internal/config"
@@ -61,7 +62,8 @@ func run() error {
 
 	repo := repository.NewActivityRepository(pool)
 	svc := service.NewActivityService(repo)
-	r := router.New(log, cfg.GinMode, handler.NewActivityHandler(svc, log))
+	deps := map[string]health.Pinger{"db": pool, "nats": pkgevents.ConnPinger{NC: nc}}
+	r := router.New(log, cfg.GinMode, handler.NewActivityHandler(svc, log), deps)
 
 	// Run the HTTP server AND the consumer concurrently. If either fails,
 	// gctx is cancelled and the other one shuts down too.

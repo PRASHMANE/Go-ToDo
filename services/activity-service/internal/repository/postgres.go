@@ -53,6 +53,3 @@ func (r *ActivityRepository) ListByUser(ctx context.Context, userID string, limi
 	}
 	return items, nil
 }
-
-// Ping lets /readyz check the database.
-func (r *ActivityRepository) Ping(ctx context.Context) error { return r.db.Ping(ctx) }

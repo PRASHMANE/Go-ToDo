@@ -3,7 +3,6 @@ package router
 
 import (
 	"log/slog"
-	"net/http"
 	"net/http/httputil"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/PRASHMANE/Go-ToDo/pkg/auth"
+	"github.com/PRASHMANE/Go-ToDo/pkg/health"
 	pkgmw "github.com/PRASHMANE/Go-ToDo/pkg/middleware"
 	"github.com/PRASHMANE/Go-ToDo/services/api-gateway/internal/config"
 	gwmw "github.com/PRASHMANE/Go-ToDo/services/api-gateway/internal/middleware"
@@ -37,6 +37,7 @@ func New(cfg config.Config, log *slog.Logger, tm *auth.TokenManager, up Upstream
 		gin.Recovery(),
 		pkgmw.RequestID(),
 		pkgmw.Logger(log),
+		pkgmw.Metrics("api-gateway"),
 		cors.New(cors.Config{
 			AllowOrigins:  cfg.CORSOrigins,
 			AllowMethods:  []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
@@ -48,7 +49,7 @@ func New(cfg config.Config, log *slog.Logger, tm *auth.TokenManager, up Upstream
 		gwmw.StripIdentityHeaders(),
 	)
 
-	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
+	health.Register(r, nil) // /healthz, /readyz, /metrics (the gateway itself is stateless)
 
 	authProxy := proxy.Handler(up.Auth)
 	todoProxy := proxy.Handler(up.Todo)

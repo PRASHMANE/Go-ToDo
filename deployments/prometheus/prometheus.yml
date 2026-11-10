@@ -1,0 +1,6 @@
+global:
+  scrape_interval: 5s
+scrape_configs:
+  - job_name: go-todo
+    static_configs:
+      - targets: ["api-gateway:8080", "auth-service:8081", "todo-service:8082", "activity-service:8083"]

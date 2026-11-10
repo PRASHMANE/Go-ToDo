@@ -11,6 +11,7 @@ import (
 	"github.com/PRASHMANE/Go-ToDo/pkg/auth"
 	pkgconfig "github.com/PRASHMANE/Go-ToDo/pkg/config"
 	"github.com/PRASHMANE/Go-ToDo/pkg/database"
+	"github.com/PRASHMANE/Go-ToDo/pkg/health"
 	"github.com/PRASHMANE/Go-ToDo/pkg/httpserver"
 	"github.com/PRASHMANE/Go-ToDo/pkg/logger"
 	"github.com/PRASHMANE/Go-ToDo/services/auth-service/internal/config"
@@ -51,5 +52,5 @@ func run() error {
 	svc := service.NewAuthService(repository.NewUserRepository(pool), tm)
 	h := handler.NewAuthHandler(svc, log)
 
-	return httpserver.Run(ctx, log, ":"+cfg.Port, router.New(log, cfg.GinMode, tm, h))
+	return httpserver.Run(ctx, log, ":"+cfg.Port, router.New(log, cfg.GinMode, tm, h, map[string]health.Pinger{"db": pool}))
 }

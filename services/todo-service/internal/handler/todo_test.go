@@ -23,7 +23,7 @@ import (
 func newTestServer() *gin.Engine {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil)) // silence logs in tests
 	svc := service.NewTodoService(repository.NewMemoryTodoRepository(), nil)
-	return router.New(log, gin.TestMode, handler.NewTodoHandler(svc, log))
+	return router.New(log, gin.TestMode, handler.NewTodoHandler(svc, log), nil)
 }
 
 func do(t *testing.T, r http.Handler, method, path, body, userID string) *httptest.ResponseRecorder {

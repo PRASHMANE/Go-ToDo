@@ -1,0 +1,74 @@
+name: backend-ci
+
+on:
+  push:
+    branches: [main]
+    paths: ["pkg/**", "services/**", "go.work", ".golangci.yml", ".github/workflows/ci-backend.yml"]
+  pull_request:
+    paths: ["pkg/**", "services/**", "go.work", ".golangci.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [pkg, services/api-gateway, services/auth-service, services/todo-service, services/activity-service]
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    env:
+      GOWORK: "off" # test each module exactly as its Docker build sees it
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.module }}/go.mod
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+      - run: go vet ./...
+      - run: go test -race -cover ./...
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.15.0
+          working-directory: ${{ matrix.module }}
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: todo_user
+          POSTGRES_PASSWORD: todo_pass
+          POSTGRES_DB: todo_db
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U todo_user" --health-interval 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://todo_user:todo_pass@localhost:5432/todo_db?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: services/todo-service/go.mod }
+      - run: go install -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.20.1
+      - run: migrate -path services/todo-service/migrations -database "$TEST_DATABASE_URL" up
+      - run: go test -tags=integration -race ./internal/repository/...
+        working-directory: services/todo-service
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        service: [api-gateway, auth-service, todo-service, activity-service]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile
+          push: false
+          tags: go-todo/${{ matrix.service }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

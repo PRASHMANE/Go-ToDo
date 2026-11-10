@@ -41,3 +41,14 @@ func EnsureStream(ctx context.Context, js jetstream.JetStream) error {
 	}
 	return nil
 }
+
+// ConnPinger adapts a NATS connection to health.Pinger for /readyz.
+type ConnPinger struct{ NC *nats.Conn }
+
+// Ping reports an error unless the connection is currently up.
+func (p ConnPinger) Ping(context.Context) error {
+	if !p.NC.IsConnected() {
+		return fmt.Errorf("nats not connected (status %s)", p.NC.Status())
+	}
+	return nil
+}
