@@ -1,5 +1,9 @@
 .PHONY: help tidy fmt vet
 
+# Tools installed with `go install` (migrate, air) live in $(go env GOPATH)/bin.
+# Put that folder on PATH for every make target, even if your shell doesn't have it.
+export PATH := $(shell go env GOPATH)/bin:$(PATH)
+
 MODULES := pkg $(wildcard services/*)
 
 help:            ## Show this help
@@ -74,3 +78,10 @@ migrate-activity: ## Apply activity-service migrations
 
 run-activity:    ## Run activity-service locally (needs `docker compose up -d nats`)
 	cd services/activity-service && DATABASE_URL="$(ACTIVITY_DB_URL)" go run ./cmd
+
+release:         ## Build production binaries into bin/ (run by supervisord on the VM)
+	@mkdir -p bin
+	@for s in api-gateway auth-service todo-service activity-service; do \
+		echo "→ bin/$$s"; \
+		(cd services/$$s && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ../../bin/$$s ./cmd) || exit 1; \
+	done
