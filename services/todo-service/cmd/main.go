@@ -11,7 +11,10 @@ import (
 	"github.com/PRASHMANE/Go-ToDo/pkg/httpserver"
 	"github.com/PRASHMANE/Go-ToDo/pkg/logger"
 	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/config"
+	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/handler"
+	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/repository"
 	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/router"
+	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/service"
 )
 
 func main() {
@@ -32,6 +35,10 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	r := router.New(log, cfg.GinMode)
+	repo := repository.NewMemoryTodoRepository()
+	svc := service.NewTodoService(repo)
+	todoHandler := handler.NewTodoHandler(svc, log)
+
+	r := router.New(log, cfg.GinMode, todoHandler)
 	return httpserver.Run(ctx, log, ":"+cfg.Port, r)
 }

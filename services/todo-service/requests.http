@@ -1,0 +1,22 @@
+@base = http://localhost:8082/api/v1
+
+### Create
+POST {{base}}/todos
+Content-Type: application/json
+
+{ "title": "Learn Gin", "priority": "high", "due_date": "2026-12-01T00:00:00Z" }
+
+### List (filters + pagination)
+GET {{base}}/todos?status=active&priority=high&q=gin&page=1&page_size=10
+
+### Get one (paste an id)
+GET {{base}}/todos/REPLACE_ID
+
+### Complete it
+PATCH {{base}}/todos/REPLACE_ID
+Content-Type: application/json
+
+{ "completed": true }
+
+### Delete
+DELETE {{base}}/todos/REPLACE_ID
