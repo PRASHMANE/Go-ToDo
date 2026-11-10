@@ -91,6 +91,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       JWT_ISSUER: go-todo-auth
       CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      TRUSTED_PROXIES: 172.16.0.0/12   # trust nginx (Docker's private range) → real client IP for rate limiting
     ports:
       - "8080:8080"            # the ONLY backend port published
     healthcheck:
@@ -101,6 +102,17 @@ services:
     depends_on:
       auth-service: { condition: service_healthy }
       todo-service: { condition: service_healthy }
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api/v1
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    restart: unless-stopped
 
 volumes:
   pgdata:

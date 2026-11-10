@@ -51,3 +51,6 @@ logs:            ## Follow logs (make logs s=todo-service)
 
 ps:              ## Show container status
 	docker compose ps
+
+open:            ## Open the app
+	open http://localhost:3000
