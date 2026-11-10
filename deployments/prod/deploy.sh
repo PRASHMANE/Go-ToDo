@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build + migrate + restart. Run on the VM as root:  sudo /opt/go-todo/deployments/prod/deploy.sh
+# Lives at: /usr/local/bin/go-todo-deploy
+# Build + migrate + restart. Run on the VM:  sudo go-todo-deploy
 set -euo pipefail
 
 APP_DIR=/opt/go-todo
@@ -21,7 +22,7 @@ echo "==> 3/5 build frontend → frontend/dist"
 as_app sh -c 'cd frontend && npm ci --no-audit --no-fund && npm run build'
 
 echo "==> 4/5 make sure Postgres + NATS are up, then run migrations"
-docker compose --env-file "$ENV_DIR/infra.env" -f deployments/prod/docker-compose.infra.yml up -d --wait
+docker compose -f "$ENV_DIR/docker-compose.infra.yml" --env-file "$ENV_DIR/infra.env" up -d --wait
 for svc in auth todo activity; do
   url=$(grep '^DATABASE_URL=' "$ENV_DIR/$svc.env" | cut -d= -f2-)
   docker run --rm --network host \

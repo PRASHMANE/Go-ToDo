@@ -1,7 +1,8 @@
 # Production infrastructure: ONLY Postgres + NATS run in Docker.
 # The Go services run natively under supervisord (see supervisor/go-todo.conf).
 #
-#   docker compose --env-file /etc/go-todo/infra.env -f deployments/prod/docker-compose.infra.yml up -d --wait
+# Lives at: /etc/go-todo/docker-compose.infra.yml (next to postgres-init.sh)
+#   sudo docker compose -f /etc/go-todo/docker-compose.infra.yml --env-file /etc/go-todo/infra.env up -d --wait
 #
 # Ports are bound to 127.0.0.1: Docker-published ports BYPASS ufw, so "0.0.0.0"
 # here would expose your database to the whole internet.

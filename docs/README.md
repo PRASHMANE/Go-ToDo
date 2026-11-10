@@ -20,7 +20,7 @@ build one phase at a time, and make **one git commit per finished phase**.
 | 02 | [Git workflow](02-git-workflow.md) | Branch per phase, commit message per phase, how to keep only *your* name on commits |
 | 03 | [How Go & Gin work](03-how-go-and-gin-work.md) | `net/http` from scratch, then how Gin is built on top of it (router, context, middleware chain, binding) |
 
-**Deploying to a server:** [AWS or GCP VM, from scratch (VPC, firewall, nginx, supervisord)](deploy-aws-gcp-vm.md) · [Hostinger VPS](deploy-hostinger-supervisor.md)
+**Deploying to a server:** [deployment/deployment.md](deployment/deployment.md): complete guide from scratch (AWS / GCP / any VPS: VPC, firewall, Ubuntu, supervisord, nginx, HTTPS)
 
 ## 2. Build order (follow this exactly)
 
