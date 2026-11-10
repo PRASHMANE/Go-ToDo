@@ -11,9 +11,6 @@ import (
 	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/handler"
 )
 
-// DemoUserID is used until the API gateway exists (Phase B5).
-const DemoUserID = "00000000-0000-0000-0000-000000000001"
-
 // New creates the Gin engine with global middleware and routes.
 func New(log *slog.Logger, ginMode string, todos *handler.TodoHandler) *gin.Engine {
 	gin.SetMode(ginMode)
@@ -23,7 +20,8 @@ func New(log *slog.Logger, ginMode string, todos *handler.TodoHandler) *gin.Engi
 
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
-	v1 := r.Group("/api/v1", middleware.FixedUser(DemoUserID)) // B5: RequireUserHeader()
+	// The gateway validated the JWT and set X-User-ID; we trust it (internal network only).
+	v1 := r.Group("/api/v1", middleware.RequireUserHeader())
 	todos.RegisterRoutes(v1)
 
 	return r

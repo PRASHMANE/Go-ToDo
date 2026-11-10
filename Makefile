@@ -33,3 +33,6 @@ migrate-auth:    ## Apply auth-service migrations
 
 run-auth:        ## Run auth-service locally
 	cd services/auth-service && DATABASE_URL="$(AUTH_DB_URL)" JWT_SECRET="$(JWT_SECRET)" go run ./cmd
+
+run-gateway:     ## Run api-gateway locally
+	cd services/api-gateway && JWT_SECRET="$(JWT_SECRET)" go run ./cmd
