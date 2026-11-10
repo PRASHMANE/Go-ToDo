@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { Spinner } from '../components/ui/Spinner';
+import { ActivityFeed } from '../features/activity/ActivityFeed';
 import { getErrorMessage } from '../lib/api-client';
 import { Pagination } from '../features/todos/components/Pagination';
 import { TodoFilters } from '../features/todos/components/TodoFilters';
@@ -34,38 +35,44 @@ export function TodosPage() {
   const mutationError = createTodo.error ?? updateTodo.error ?? deleteTodo.error;
 
   return (
-    <section className="flex flex-col gap-4">
-      <TodoForm onSubmit={(input) => createTodo.mutate(input)} isSubmitting={createTodo.isPending} />
+    <div className="grid gap-6 md:grid-cols-[1fr_280px]">
+      <section className="flex flex-col gap-4" aria-label="Todos">
+        <TodoForm
+          onSubmit={(input) => createTodo.mutate(input)}
+          isSubmitting={createTodo.isPending}
+        />
 
-      {mutationError && <ErrorMessage message={getErrorMessage(mutationError)} />}
+        {mutationError && <ErrorMessage message={getErrorMessage(mutationError)} />}
 
-      <TodoFilters filters={filters} onChange={setFilters} />
+        <TodoFilters filters={filters} onChange={setFilters} />
 
-      <div className="flex h-5 items-center justify-between text-sm text-slate-500">
-        <span>{todosQuery.data ? `${total} todos` : ''}</span>
-        {todosQuery.isFetching && !todosQuery.isPending && <span>Updating…</span>}
-      </div>
+        <div className="flex h-5 items-center justify-between text-sm text-slate-500">
+          <span>{todosQuery.data ? `${total} todos` : ''}</span>
+          {todosQuery.isFetching && !todosQuery.isPending && <span>Updating…</span>}
+        </div>
 
-      {todosQuery.isPending ? (
-        <Spinner />
-      ) : todosQuery.isError ? (
-        <ErrorMessage message={getErrorMessage(todosQuery.error)} />
-      ) : (
-        <>
-          <TodoList
-            todos={todosQuery.data.items}
-            onToggle={(t) => updateTodo.mutate({ id: t.id, input: { completed: !t.completed } })}
-            onUpdate={(t, input) => updateTodo.mutate({ id: t.id, input })}
-            onDelete={(t) => deleteTodo.mutate(t.id)}
-          />
-          <Pagination
-            page={filters.page}
-            pageSize={PAGE_SIZE}
-            total={total}
-            onPageChange={(page) => setFilters({ page })}
-          />
-        </>
-      )}
-    </section>
+        {todosQuery.isPending ? (
+          <Spinner />
+        ) : todosQuery.isError ? (
+          <ErrorMessage message={getErrorMessage(todosQuery.error)} />
+        ) : (
+          <>
+            <TodoList
+              todos={todosQuery.data.items}
+              onToggle={(t) => updateTodo.mutate({ id: t.id, input: { completed: !t.completed } })}
+              onUpdate={(t, input) => updateTodo.mutate({ id: t.id, input })}
+              onDelete={(t) => deleteTodo.mutate(t.id)}
+            />
+            <Pagination
+              page={filters.page}
+              pageSize={PAGE_SIZE}
+              total={total}
+              onPageChange={(page) => setFilters({ page })}
+            />
+          </>
+        )}
+      </section>
+      <ActivityFeed />
+    </div>
   );
 }

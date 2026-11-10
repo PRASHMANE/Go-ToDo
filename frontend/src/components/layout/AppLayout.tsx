@@ -7,7 +7,7 @@ export function AppLayout() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-2xl items-center justify-between p-4">
+        <div className="mx-auto flex max-w-5xl items-center justify-between p-4">
           <span className="text-xl font-bold">Go-ToDo</span>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-slate-600">{user?.name}</span>
@@ -17,7 +17,7 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-2xl p-6">
+      <main className="mx-auto max-w-5xl p-6">
         <Outlet />
       </main>
     </div>

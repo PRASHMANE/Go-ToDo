@@ -1,4 +1,6 @@
+import { ErrorBoundary } from 'react-error-boundary';
 import { Route, Routes } from 'react-router';
+import { ErrorFallback } from './components/ErrorFallback';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
@@ -8,18 +10,21 @@ import { TodosPage } from './pages/TodosPage';
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+    // Catches render errors anywhere below and shows a fallback instead of a white screen.
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      {/* guard → layout → page */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route index element={<TodosPage />} />
+        {/* guard → layout → page */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<TodosPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

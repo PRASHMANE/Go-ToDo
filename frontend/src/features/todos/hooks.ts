@@ -1,6 +1,15 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { activityKeys } from '../activity/hooks';
 import { todosApi } from './api';
 import type { ListTodosParams, ListTodosResponse, Todo, UpdateTodoInput } from './types';
+
+/** After any todo change: refetch todo lists AND the activity feed (fed by events). */
+function invalidateAfterChange(qc: ReturnType<typeof useQueryClient>) {
+  return Promise.all([
+    qc.invalidateQueries({ queryKey: todoKeys.all }),
+    qc.invalidateQueries({ queryKey: activityKeys.all }),
+  ]);
+}
 
 /** Central place for query keys. Never type them by hand elsewhere. */
 export const todoKeys = {
@@ -21,7 +30,7 @@ export function useCreateTodo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: todosApi.create,
-    onSuccess: () => qc.invalidateQueries({ queryKey: todoKeys.all }),
+    onSuccess: () => invalidateAfterChange(qc),
   });
 }
 
@@ -52,7 +61,7 @@ export function useUpdateTodo() {
     },
 
     // 3. always: refetch so we end up with the server's truth (e.g. filters)
-    onSettled: () => qc.invalidateQueries({ queryKey: todoKeys.all }),
+    onSettled: () => invalidateAfterChange(qc),
   });
 }
 
@@ -60,6 +69,6 @@ export function useDeleteTodo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: todosApi.remove,
-    onSuccess: () => qc.invalidateQueries({ queryKey: todoKeys.all }),
+    onSuccess: () => invalidateAfterChange(qc),
   });
 }
