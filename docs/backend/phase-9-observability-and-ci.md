@@ -182,7 +182,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:16-alpine
         env:
           POSTGRES_USER: todo_user
           POSTGRES_PASSWORD: todo_pass

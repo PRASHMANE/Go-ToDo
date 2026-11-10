@@ -87,6 +87,17 @@ Handlers always read `c.GetString(middleware.ContextUserID)`. Today
 `FixedUser` fills it; in B5 we swap to `RequireUserHeader` and **handlers
 don't change**.
 
+## Step 1b — Friendly validation errors: `pkg/response/bind.go`
+
+Gin's raw validation error looks like
+`Key: 'CreateTodoRequest.Title' Error:Field validation for 'Title' failed on the 'required' tag`.
+That's fine for developers but bad for a UI. `response.BindError(c, err)` turns
+`validator.ValidationErrors` into messages like `title is required; priority must be one of: low medium high`
+(field names converted to snake_case, the same names the client sends).
+Read the real file in the repo: [pkg/response/bind.go](../../pkg/response/bind.go). It uses
+`errors.As` to detect validation errors, and a `switch` on `fe.Tag()` for the message.
+(This was added in phase F2, when the UI first showed these errors.)
+
 ## Step 2 — `internal/model/todo.go`
 
 ```go
@@ -547,7 +558,7 @@ func (h *TodoHandler) RegisterRoutes(rg *gin.RouterGroup) {
 func (h *TodoHandler) create(c *gin.Context) {
 	var req dto.CreateTodoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err) // friendly message, e.g. "title is required"
 		return
 	}
 	todo, err := h.svc.Create(c.Request.Context(), userID(c), service.CreateTodoInput{
@@ -566,7 +577,7 @@ func (h *TodoHandler) create(c *gin.Context) {
 func (h *TodoHandler) list(c *gin.Context) {
 	var q dto.ListTodosQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err) // friendly message, e.g. "title is required"
 		return
 	}
 	res, err := h.svc.List(c.Request.Context(), userID(c), service.ListTodosInput{
@@ -610,7 +621,7 @@ func (h *TodoHandler) update(c *gin.Context) {
 	}
 	var req dto.UpdateTodoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err) // friendly message, e.g. "title is required"
 		return
 	}
 	in := service.UpdateTodoInput{

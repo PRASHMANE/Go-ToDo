@@ -93,7 +93,7 @@ We are building a **microservice architecture** with an **API gateway**,
 | **12-factor config** | `pkg/config`, `.env` | All config comes from environment variables. The same Docker image runs in dev and prod. |
 | **Graceful shutdown** | `pkg/httpserver` | On SIGTERM, stop accepting requests and finish in-flight ones before exiting. |
 | **Health checks (liveness/readiness)** | `/healthz`, `/readyz` | Docker/Kubernetes know when a service is alive and when it is ready for traffic. |
-| **Multi-stage Docker builds** | every `Dockerfile` | Compile in a big image, ship a tiny image (~15 MB) with only the binary. |
+| **Multi-stage Docker builds** | every `Dockerfile` | Compile in a big image, ship a small image (~25–40 MB) with only the binary. |
 | **Monorepo + Go workspace** | `go.work` | All services live in one git repo, but each is an independent Go module. |
 | **Feature-based folders (frontend)** | `frontend/src/features/*` | Code is grouped by feature (auth, todos), not by file type. |
 | **Server-state caching (frontend)** | TanStack Query | API data is cached, re-fetched and invalidated automatically instead of being hand-managed in `useState`. |
@@ -320,10 +320,10 @@ Every service also has `GET /healthz` (liveness) and, from B9, `GET /readyz` and
 
 | Tech | Why |
 |------|-----|
-| Go 1.25+ | Fast, simple, single static binary, great concurrency, the standard for cloud services. |
+| Go 1.27 | Fast, simple, single static binary, great concurrency, the standard for cloud services. |
 | Gin | The most used Go web framework: fast radix-tree router, middleware, JSON binding + validation. |
 | `log/slog` | Structured JSON logging from the **standard library**. No extra dependency. |
-| PostgreSQL 17 + `pgx/v5` | Reliable relational DB; `pgx` is the fastest, most complete Postgres driver for Go. |
+| PostgreSQL 16 + `pgx/v5` | Reliable relational DB; `pgx` is the fastest, most complete Postgres driver for Go. |
 | `golang-migrate` | Versioned SQL migrations, used both as CLI and in Docker. |
 | `golang-jwt/jwt/v5` + `bcrypt` | JWT signing/verification and safe password hashing. |
 | NATS JetStream | Lightweight message broker with durable streams. Much simpler to run than Kafka; same concepts. |

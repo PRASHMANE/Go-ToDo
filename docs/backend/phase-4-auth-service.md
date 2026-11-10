@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS users (
 `000001_create_users.down.sql`: `DROP TABLE IF EXISTS users;`
 
 ```bash
-export AUTH_DB_URL="postgres://auth_user:auth_pass@localhost:5432/auth_db?sslmode=disable"
+export AUTH_DB_URL="postgres://auth_user:auth_pass@localhost:15432/auth_db?sslmode=disable"
 migrate -path services/auth-service/migrations -database "$AUTH_DB_URL" up
 ```
 
@@ -469,7 +469,7 @@ func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, requireAuth gin.Handle
 func (h *AuthHandler) register(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err) // friendly message, e.g. "title is required"
 		return
 	}
 	u, err := h.svc.Register(c.Request.Context(), req.Email, req.Name, req.Password)
@@ -483,7 +483,7 @@ func (h *AuthHandler) register(c *gin.Context) {
 func (h *AuthHandler) login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err) // friendly message, e.g. "title is required"
 		return
 	}
 	res, err := h.svc.Login(c.Request.Context(), req.Email, req.Password)
@@ -667,7 +667,7 @@ JWT_ISSUER=go-todo-auth
 Makefile:
 
 ```makefile
-AUTH_DB_URL ?= postgres://auth_user:auth_pass@localhost:5432/auth_db?sslmode=disable
+AUTH_DB_URL ?= postgres://auth_user:auth_pass@localhost:15432/auth_db?sslmode=disable
 JWT_SECRET  ?= dev-only-secret-change-me-dev-only-secret
 
 migrate-auth:    ## Apply auth-service migrations
@@ -688,7 +688,8 @@ curl -s -X POST $A/register -H 'Content-Type: application/json' \
   -d '{"email":"me@example.com","name":"x","password":"supersecret"}' | jq      # 409 email_taken
 TOKEN=$(curl -s -X POST $A/login -H 'Content-Type: application/json' \
   -d '{"email":"me@example.com","password":"supersecret"}' | jq -r .access_token)
-echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null; echo     # read the claims
+# read the claims (JWT parts are unpadded base64url, so plain `base64 -d` often fails):
+jq -R 'split(".")[1] | gsub("-";"+") | gsub("_";"/") | . + ("=" * ((4 - length % 4) % 4)) | @base64d | fromjson' <<< "$TOKEN"
 curl -s $A/me -H "Authorization: Bearer $TOKEN" | jq
 curl -s $A/me -H "Authorization: Bearer ${TOKEN}x" | jq     # 401
 curl -s -X POST $A/login -H 'Content-Type: application/json' \

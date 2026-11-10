@@ -314,7 +314,7 @@ Run it against the compose database:
 ```bash
 make db-up migrate-todo
 cd services/todo-service
-TEST_DATABASE_URL="postgres://todo_user:todo_pass@localhost:5432/todo_db?sslmode=disable" \
+TEST_DATABASE_URL="postgres://todo_user:todo_pass@localhost:15432/todo_db?sslmode=disable" \
   go test -tags=integration -race ./internal/repository/...
 ```
 

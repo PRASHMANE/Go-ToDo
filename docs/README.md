@@ -61,3 +61,43 @@ A phase is finished only when **all** of these are true:
 3. After each file, run `go build ./...` and fix errors yourself before
    looking back at the doc.
 4. Do the **"Exercises"** at the end. They are where you actually learn.
+
+---
+
+## 5. "As built" notes (read this!)
+
+All 17 phases have been **implemented, tested and committed** (tags `b0` … `b9`,
+`f0` … `f6`). The code in the repo is the source of truth. Where building
+it for real taught us something, the code differs from the first draft of these
+docs, as listed below:
+
+| Topic | What the code actually does | Why |
+|-------|-----------------------------|-----|
+| Postgres host port | `15432` (container still listens on 5432) | This Mac already runs Postgres on 5432 *and* something on 5433. |
+| Postgres image | `postgres:16-alpine` | Was already available locally; 16 vs 17 makes no difference here. |
+| Go version | Go **1.27.3**, `golang:1.27-alpine` builder | The installed toolchain. `go.mod` says `go 1.27.3`. |
+| `make tidy` | runs `GOWORK=off go mod tidy` per module | With `go.work` on, a missing `go.sum` entry is invisible on your Mac but **breaks the Docker build** (`missing go.sum entry ... golang-jwt`). Tidying with the workspace off reproduces Docker exactly. CI also runs with `GOWORK=off`. |
+| Validation errors | `response.BindError` → `"title is required"` | Raw validator messages aren't fit for a UI. |
+| Search | `%` and `_` are escaped in `ILIKE` | So searching `100%` is literal (B3 exercise 2, done). |
+| Timestamps | Postgres repos convert to UTC on read | pgx returns the machine's local zone (`+05:30`); the API always speaks UTC. |
+| Event publishing | uses `context.WithoutCancel` | An event is still published if the client disconnects right after the write. |
+| Invalid events | consumer **Terms** events with missing IDs (`service.ErrInvalidEvent`) | Retrying can never fix them; only temporary errors (DB down) are Nak'd for retry. |
+| `/healthz` `/readyz` `/metrics` | one shared package: `pkg/health.Register(r, deps)` | Same code in all 4 services; readiness checks Postgres **and** NATS. |
+| Gateway tests | run behind `httptest.NewServer` | `httputil.ReverseProxy` needs `CloseNotify`, which `httptest.ResponseRecorder` lacks. |
+| Frontend lint | oxlint (not ESLint), `useNow()` hook for time | Current Vite template. |
+| Test libraries | MSW **3** (`onUnhandledFrame`), Vitest 5, react-router 8 | Latest versions at build time. |
+| Healthchecks | `127.0.0.1`, never `localhost`, inside alpine containers | `localhost` resolves to IPv6 `::1`; nginx/NATS listen on IPv4 → false "unhealthy". |
+| NATS CLI | `nats --server nats://127.0.0.1:4222 ...` | The bare `localhost:4222` form didn't connect. |
+| Image sizes | Go services 27–41 MB, frontend ~93 MB | Real numbers, not estimates. |
+
+### What is verified
+
+- **Backend:** `make test` (race detector), `make test-integration` (real Postgres) and `make lint` (0 issues, 5 modules) all pass.
+- **Frontend:** `npm run test:run` (23 tests), `npm run lint`, `npm run typecheck` and `npm run build` all pass.
+- **Full stack:** `docker compose up --build` gives 7 healthy containers. Each phase's "Verify" section was run end to end against it.
+
+### Not done (intentionally)
+
+The **Exercises** at the end of each phase are left for you. They're how
+you learn. Two were done because they fixed real bugs (LIKE escaping) or
+security gaps (gateway header-spoofing tests).

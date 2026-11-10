@@ -11,7 +11,7 @@ health checks. Only the gateway is reachable from your Mac.
   app + OS files). A *container* is a running instance of an image.
 - **Multi-stage build:** stage 1 uses the big `golang` image (~800 MB) to
   compile; stage 2 copies **only the binary** into a tiny `distroless` image
-  (~15 MB total). Smaller = faster deploys and fewer vulnerabilities.
+  (~25–40 MB total vs ~800 MB). Smaller = faster deploys and fewer vulnerabilities.
 - **Static binary:** `CGO_ENABLED=0` makes Go produce a binary with no C
   library dependencies, so it runs on a minimal image with no OS packages.
 - **Layer caching:** Docker caches each instruction. We copy `go.mod`/`go.sum`
@@ -71,7 +71,7 @@ func main() {
 ############################
 # Stage 1: build
 ############################
-FROM golang:1.25-alpine AS builder
+FROM golang:1.27-alpine AS builder
 WORKDIR /src
 ENV CGO_ENABLED=0 GOOS=linux GOWORK=off
 
@@ -145,12 +145,12 @@ x-go-service: &go-service            # YAML anchor: shared settings
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"                   # dev convenience only; remove in prod
+      - "15432:5432"           # host 15432 (your Mac may already run Postgres on 5432/5433); dev only
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./deployments/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -162,7 +162,7 @@ services:
 
   # ---------- one-off migration jobs ----------
   auth-migrate:
-    image: migrate/migrate:v4.18.1
+    image: migrate/migrate:v4.20.1
     command: ["-path=/migrations", "-database=postgres://auth_user:auth_pass@postgres:5432/auth_db?sslmode=disable", "up"]
     volumes:
       - ./services/auth-service/migrations:/migrations:ro
@@ -170,7 +170,7 @@ services:
       postgres: { condition: service_healthy }
 
   todo-migrate:
-    image: migrate/migrate:v4.18.1
+    image: migrate/migrate:v4.20.1
     command: ["-path=/migrations", "-database=postgres://todo_user:todo_pass@postgres:5432/todo_db?sslmode=disable", "up"]
     volumes:
       - ./services/todo-service/migrations:/migrations:ro
@@ -290,7 +290,7 @@ rebuild is thanks to layer caching.
 | Symptom | Fix |
 |---------|-----|
 | `replacement directory ../../pkg does not exist` | Build context must be `.` (repo root), not the service folder. |
-| `missing go.sum entry` | Run `make tidy` locally and commit `go.sum`. |
+| `missing go.sum entry` (e.g. for `golang-jwt` while building todo-service) | The workspace hid it locally. Run `make tidy` (it uses `GOWORK=off go mod tidy` per module) and commit the `go.sum` files. |
 | migrate: `no change` | Fine: migrations already applied. |
 | `password authentication failed` | `init.sql` only runs on a fresh volume: `make reset`. |
 | Port 5432 in use | A local Postgres is running: `brew services stop postgresql` or change the host port. |

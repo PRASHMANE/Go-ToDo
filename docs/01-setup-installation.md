@@ -14,7 +14,7 @@ brew --version
 
 ```bash
 brew install go
-go version            # expect go1.25 or newer
+go version            # expect go1.27 or newer (this project was built with go1.27.3)
 go env GOPATH         # usually /Users/<you>/go
 go env GOMODCACHE     # where downloaded modules live
 ```

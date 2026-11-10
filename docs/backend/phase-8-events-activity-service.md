@@ -70,7 +70,7 @@ docker-compose.yml                                      # + nats, activity-migra
     volumes:
       - natsdata:/data
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/healthz"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -469,7 +469,7 @@ Compose additions:
 
 ```yaml
   activity-migrate:
-    image: migrate/migrate:v4.18.1
+    image: migrate/migrate:v4.20.1
     command: ["-path=/migrations", "-database=postgres://activity_user:activity_pass@postgres:5432/activity_db?sslmode=disable", "up"]
     volumes: ["./services/activity-service/migrations:/migrations:ro"]
     depends_on: { postgres: { condition: service_healthy } }
@@ -504,13 +504,13 @@ curl -s $G/activity -H "Authorization: Bearer $TA" | jq      # created + complet
 # resilience: events wait while the consumer is down
 docker compose stop activity-service
 curl -s -X POST $G/todos -H "Authorization: Bearer $TA" -H 'Content-Type: application/json' -d '{"title":"while down"}' | jq .id   # still works!
-nats --server localhost:4222 stream info TODOS                # messages stored
-nats --server localhost:4222 consumer info TODOS activity-service   # "Unprocessed Messages: 1"
+nats --server nats://127.0.0.1:4222 stream info TODOS                # messages stored
+nats --server nats://127.0.0.1:4222 consumer info TODOS activity-service   # "Unprocessed Messages: 1"
 docker compose start activity-service
 sleep 3; curl -s $G/activity -H "Authorization: Bearer $TA" | jq '.items[0].title'  # "while down"
 
 # watch live events
-nats --server localhost:4222 sub 'todos.>'
+nats --server nats://127.0.0.1:4222 sub 'todos.>'
 ```
 
 ## Exercises

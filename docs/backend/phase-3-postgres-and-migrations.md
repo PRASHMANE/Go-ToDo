@@ -58,12 +58,12 @@ name: go-todo
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"            # exposed so you can run services with `go run` on your Mac
+      - "15432:5432"           # host 15432 → container 5432 (your Mac may already run Postgres on 5432/5433)
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./deployments/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -80,7 +80,7 @@ volumes:
 ```bash
 docker compose up -d postgres
 docker compose ps                      # STATUS should become "healthy"
-psql "postgres://todo_user:todo_pass@localhost:5432/todo_db" -c 'select current_user, current_database();'
+psql "postgres://todo_user:todo_pass@localhost:15432/todo_db" -c 'select current_user, current_database();'
 ```
 
 > Changed `init.sql` later? It won't re-run on an existing volume. Reset with
@@ -124,7 +124,7 @@ database. The link is just a UUID. This is normal in microservices.
 Run it:
 
 ```bash
-export TODO_DB_URL="postgres://todo_user:todo_pass@localhost:5432/todo_db?sslmode=disable"
+export TODO_DB_URL="postgres://todo_user:todo_pass@localhost:15432/todo_db?sslmode=disable"
 migrate -path services/todo-service/migrations -database "$TODO_DB_URL" up
 migrate -path services/todo-service/migrations -database "$TODO_DB_URL" version   # 1
 psql "$TODO_DB_URL" -c '\d todos'
@@ -375,12 +375,12 @@ to switch storage:**
 
 ```bash
 # Copy to .env and adjust. .env is git-ignored.
-TODO_DATABASE_URL=postgres://todo_user:todo_pass@localhost:5432/todo_db?sslmode=disable
-AUTH_DATABASE_URL=postgres://auth_user:auth_pass@localhost:5432/auth_db?sslmode=disable
+TODO_DATABASE_URL=postgres://todo_user:todo_pass@localhost:15432/todo_db?sslmode=disable
+AUTH_DATABASE_URL=postgres://auth_user:auth_pass@localhost:15432/auth_db?sslmode=disable
 ```
 
 ```makefile
-TODO_DB_URL ?= postgres://todo_user:todo_pass@localhost:5432/todo_db?sslmode=disable
+TODO_DB_URL ?= postgres://todo_user:todo_pass@localhost:15432/todo_db?sslmode=disable
 
 db-up:           ## Start Postgres
 	docker compose up -d postgres

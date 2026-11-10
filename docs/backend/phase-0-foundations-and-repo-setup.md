@@ -314,7 +314,7 @@ cat go.work
 You should see:
 
 ```go
-go 1.25
+go 1.27.3
 
 use (
 	./pkg

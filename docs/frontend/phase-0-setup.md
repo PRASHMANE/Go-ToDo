@@ -167,6 +167,13 @@ VITE_API_URL=/api/v1
 Only variables starting with `VITE_` are exposed to browser code, and they are
 **public**: never put secrets in them.
 
+## Template changes (late 2026)
+
+The current `create-vite` template ships **oxlint** (a very fast Rust linter)
+instead of ESLint, and **TypeScript 7**. `npm run lint` runs oxlint. Its
+`react(purity)` rule warns if you call `new Date()` during render. That's why
+the code uses a small `useNow()` hook (`src/hooks/useNow.ts`) instead.
+
 ## TypeScript notes for this template
 
 - The template enables `verbatimModuleSyntax`: import **types** with `import type { Todo } from ...`.
