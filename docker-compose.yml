@@ -1,0 +1,21 @@
+name: go-todo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "15432:5432"           # host 15432 (your Mac may already run Postgres on 5432/5433) → container 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deployments/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

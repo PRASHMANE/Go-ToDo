@@ -14,5 +14,13 @@ fmt:             ## gofmt everything
 vet:             ## go vet every module
 	@for m in $(MODULES); do [ -f $$m/go.mod ] && (echo "→ $$m" && cd $$m && go vet ./...); done
 
-run-todo:        ## Run todo-service locally
-	cd services/todo-service && go run ./cmd
+TODO_DB_URL ?= postgres://todo_user:todo_pass@localhost:15432/todo_db?sslmode=disable
+
+db-up:           ## Start Postgres
+	docker compose up -d --wait postgres
+
+migrate-todo:    ## Apply todo-service migrations
+	migrate -path services/todo-service/migrations -database "$(TODO_DB_URL)" up
+
+run-todo:        ## Run todo-service locally (Postgres)
+	cd services/todo-service && DATABASE_URL="$(TODO_DB_URL)" go run ./cmd

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/PRASHMANE/Go-ToDo/pkg/database"
 	"github.com/PRASHMANE/Go-ToDo/pkg/httpserver"
 	"github.com/PRASHMANE/Go-ToDo/pkg/logger"
 	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/config"
@@ -35,7 +36,20 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	repo := repository.NewMemoryTodoRepository()
+	var repo service.TodoRepository
+	if cfg.DatabaseURL != "" {
+		pool, err := database.NewPostgresPool(ctx, cfg.DatabaseURL)
+		if err != nil {
+			return err
+		}
+		defer pool.Close()
+		repo = repository.NewPostgresTodoRepository(pool)
+		log.Info("using postgres repository")
+	} else {
+		repo = repository.NewMemoryTodoRepository()
+		log.Warn("DATABASE_URL not set, using in-memory repository")
+	}
+
 	svc := service.NewTodoService(repo)
 	todoHandler := handler.NewTodoHandler(svc, log)
 
