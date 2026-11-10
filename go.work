@@ -2,5 +2,6 @@ go 1.27.3
 
 use (
 	./pkg
+	./services/auth-service
 	./services/todo-service
 )

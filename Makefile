@@ -24,3 +24,12 @@ migrate-todo:    ## Apply todo-service migrations
 
 run-todo:        ## Run todo-service locally (Postgres)
 	cd services/todo-service && DATABASE_URL="$(TODO_DB_URL)" go run ./cmd
+
+AUTH_DB_URL ?= postgres://auth_user:auth_pass@localhost:15432/auth_db?sslmode=disable
+JWT_SECRET  ?= dev-only-secret-change-me-dev-only-secret
+
+migrate-auth:    ## Apply auth-service migrations
+	migrate -path services/auth-service/migrations -database "$(AUTH_DB_URL)" up
+
+run-auth:        ## Run auth-service locally
+	cd services/auth-service && DATABASE_URL="$(AUTH_DB_URL)" JWT_SECRET="$(JWT_SECRET)" go run ./cmd
