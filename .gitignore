@@ -1,0 +1,22 @@
+# Go
+bin/
+*.exe
+*.test
+*.out
+coverage.*
+tmp/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
