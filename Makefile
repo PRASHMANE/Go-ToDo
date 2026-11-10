@@ -6,7 +6,7 @@ help:            ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 tidy:            ## go mod tidy in every module
-	@for m in $(MODULES); do [ -f $$m/go.mod ] && (echo "→ $$m" && cd $$m && go mod tidy); done
+	@for m in $(MODULES); do [ -f $$m/go.mod ] && (echo "→ $$m" && cd $$m && GOWORK=off go mod tidy); done
 
 fmt:             ## gofmt everything
 	gofmt -s -w .
@@ -36,3 +36,18 @@ run-auth:        ## Run auth-service locally
 
 run-gateway:     ## Run api-gateway locally
 	cd services/api-gateway && JWT_SECRET="$(JWT_SECRET)" go run ./cmd
+
+up:              ## Build and start everything
+	docker compose up -d --build --wait
+
+down:            ## Stop everything (keeps data)
+	docker compose down
+
+reset:           ## Stop everything and DELETE the database volume
+	docker compose down -v
+
+logs:            ## Follow logs (make logs s=todo-service)
+	docker compose logs -f $(s)
+
+ps:              ## Show container status
+	docker compose ps

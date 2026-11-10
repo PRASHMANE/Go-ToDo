@@ -47,3 +47,18 @@ func Run(ctx context.Context, log *slog.Logger, addr string, handler http.Handle
 	log.Info("http server stopped")
 	return nil
 }
+
+// Healthcheck GETs http://127.0.0.1:<port>/healthz and returns an exit code.
+// Used by Docker: `CMD ["/app", "healthcheck"]` (distroless images have no curl).
+func Healthcheck(port string) int {
+	client := http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get("http://127.0.0.1:" + port + "/healthz")
+	if err != nil {
+		return 1
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return 1
+	}
+	return 0
+}

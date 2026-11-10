@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/PRASHMANE/Go-ToDo/pkg/auth"
+	pkgconfig "github.com/PRASHMANE/Go-ToDo/pkg/config"
 	"github.com/PRASHMANE/Go-ToDo/pkg/httpserver"
 	"github.com/PRASHMANE/Go-ToDo/pkg/logger"
 	"github.com/PRASHMANE/Go-ToDo/services/api-gateway/internal/config"
@@ -18,6 +19,10 @@ import (
 )
 
 func main() {
+	// `app healthcheck` is used by Docker HEALTHCHECK (no curl in distroless images).
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(httpserver.Healthcheck(pkgconfig.String("PORT", "8080")))
+	}
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "fatal:", err)
 		os.Exit(1)
