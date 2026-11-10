@@ -13,3 +13,6 @@ fmt:             ## gofmt everything
 
 vet:             ## go vet every module
 	@for m in $(MODULES); do [ -f $$m/go.mod ] && (echo "→ $$m" && cd $$m && go vet ./...); done
+
+run-todo:        ## Run todo-service locally
+	cd services/todo-service && go run ./cmd
