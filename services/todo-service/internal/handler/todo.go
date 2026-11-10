@@ -40,7 +40,7 @@ func (h *TodoHandler) RegisterRoutes(rg *gin.RouterGroup) {
 func (h *TodoHandler) create(c *gin.Context) {
 	var req dto.CreateTodoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err)
 		return
 	}
 	todo, err := h.svc.Create(c.Request.Context(), userID(c), service.CreateTodoInput{
@@ -59,7 +59,7 @@ func (h *TodoHandler) create(c *gin.Context) {
 func (h *TodoHandler) list(c *gin.Context) {
 	var q dto.ListTodosQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err)
 		return
 	}
 	res, err := h.svc.List(c.Request.Context(), userID(c), service.ListTodosInput{
@@ -103,7 +103,7 @@ func (h *TodoHandler) update(c *gin.Context) {
 	}
 	var req dto.UpdateTodoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid_request", err.Error())
+		response.BindError(c, err)
 		return
 	}
 	in := service.UpdateTodoInput{
