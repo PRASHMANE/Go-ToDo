@@ -54,3 +54,15 @@ ps:              ## Show container status
 
 open:            ## Open the app
 	open http://localhost:3000
+
+test:            ## Unit + handler tests (race detector on)
+	@for m in $(MODULES); do [ -f $$m/go.mod ] && (echo "→ $$m" && cd $$m && go test -race -cover ./...); done
+
+test-integration: ## Integration tests (needs `make db-up migrate-todo`)
+	cd services/todo-service && TEST_DATABASE_URL="$(TODO_DB_URL)" go test -tags=integration -race ./...
+
+lint:            ## golangci-lint on every module
+	@for m in $(MODULES); do [ -f $$m/go.mod ] && (echo "→ $$m" && cd $$m && golangci-lint run ./...); done
+
+cover:           ## HTML coverage report for todo-service
+	cd services/todo-service && go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out

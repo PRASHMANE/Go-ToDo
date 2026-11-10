@@ -30,7 +30,7 @@ type CreateTodoInput struct {
 	DueDate     *time.Time
 }
 
-// UpdateTodoInput: nil fields are left unchanged.
+// UpdateTodoInput is a partial update: nil fields are left unchanged.
 type UpdateTodoInput struct {
 	Title        *string
 	Description  *string
@@ -64,6 +64,12 @@ type TodoService struct {
 // NewTodoService wires the service with its repository.
 func NewTodoService(repo TodoRepository) *TodoService {
 	return &TodoService{repo: repo, now: time.Now}
+}
+
+// WithClock overrides the clock (tests only).
+func (s *TodoService) WithClock(now func() time.Time) *TodoService {
+	s.now = now
+	return s
 }
 
 // Create validates input, applies defaults and stores a new todo.
