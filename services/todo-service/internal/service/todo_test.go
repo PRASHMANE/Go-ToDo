@@ -19,7 +19,7 @@ const user = "00000000-0000-0000-0000-0000000000aa"
 var fixedNow = time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 
 func newService() *service.TodoService {
-	return service.NewTodoService(repository.NewMemoryTodoRepository()).
+	return service.NewTodoService(repository.NewMemoryTodoRepository(), nil).
 		WithClock(func() time.Time { return fixedNow })
 }
 
@@ -157,7 +157,7 @@ type failingRepo struct{ service.TodoRepository } // embed interface: only overr
 func (failingRepo) Create(context.Context, *model.Todo) error { return errors.New("db down") }
 
 func TestCreate_RepositoryErrorIsWrapped(t *testing.T) {
-	svc := service.NewTodoService(failingRepo{})
+	svc := service.NewTodoService(failingRepo{}, nil)
 	_, err := svc.Create(context.Background(), user, service.CreateTodoInput{Title: "x"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "create todo: db down")

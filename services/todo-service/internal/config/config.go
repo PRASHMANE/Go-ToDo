@@ -10,6 +10,8 @@ type Config struct {
 	GinMode  string
 	// DatabaseURL empty → in-memory repository.
 	DatabaseURL string
+	// NATSURL empty → events disabled.
+	NATSURL string
 }
 
 // Load reads env vars, applying local-development defaults.
@@ -19,5 +21,6 @@ func Load() (Config, error) {
 		LogLevel:    pkgconfig.String("LOG_LEVEL", "info"),
 		GinMode:     pkgconfig.String("GIN_MODE", "debug"),
 		DatabaseURL: pkgconfig.String("DATABASE_URL", ""),
+		NATSURL:     pkgconfig.String("NATS_URL", ""),
 	}, nil
 }

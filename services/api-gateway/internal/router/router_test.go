@@ -45,7 +45,7 @@ func newGateway(t *testing.T, upstreamURL string, rps float64, burst int) string
 	require.NoError(t, err)
 	cfg := config.Config{GinMode: gin.TestMode, JWTIssuer: "iss", CORSOrigins: []string{"http://localhost:5173"},
 		RateLimitRPS: rps, RateLimitBurst: burst}
-	r, err := router.New(cfg, log, auth.NewTokenManager(secret, "iss", time.Hour), router.Upstreams{Auth: p, Todo: p})
+	r, err := router.New(cfg, log, auth.NewTokenManager(secret, "iss", time.Hour), router.Upstreams{Auth: p, Todo: p, Activity: p})
 	require.NoError(t, err)
 	srv := httptest.NewServer(r)
 	t.Cleanup(srv.Close)
@@ -108,6 +108,7 @@ func TestRejectsMissingOrBadToken(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized,
 		call(t, gw, "GET", "/api/v1/todos", map[string]string{"Authorization": "Bearer nope"}).Code)
 	assert.Equal(t, http.StatusUnauthorized, call(t, gw, "GET", "/api/v1/auth/me", nil).Code)
+	assert.Equal(t, http.StatusUnauthorized, call(t, gw, "GET", "/api/v1/activity", nil).Code)
 }
 
 func TestRateLimit(t *testing.T) {

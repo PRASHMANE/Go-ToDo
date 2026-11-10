@@ -47,11 +47,15 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	activityProxy, err := proxy.New(cfg.ActivityServiceURL, log)
+	if err != nil {
+		return err
+	}
 
 	// The gateway only VERIFIES tokens, so the TTL value here is irrelevant.
 	tm := auth.NewTokenManager(cfg.JWTSecret, cfg.JWTIssuer, time.Hour)
 
-	r, err := router.New(cfg, log, tm, router.Upstreams{Auth: authProxy, Todo: todoProxy})
+	r, err := router.New(cfg, log, tm, router.Upstreams{Auth: authProxy, Todo: todoProxy, Activity: activityProxy})
 	if err != nil {
 		return err
 	}

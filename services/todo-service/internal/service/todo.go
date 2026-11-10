@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/PRASHMANE/Go-ToDo/pkg/events"
 	"github.com/PRASHMANE/Go-ToDo/services/todo-service/internal/model"
 )
 
@@ -55,15 +56,43 @@ type ListResult struct {
 	Total int
 }
 
-// TodoService implements todo use cases.
-type TodoService struct {
-	repo TodoRepository
-	now  func() time.Time // injectable clock → deterministic tests
+// EventPublisher sends domain events. Declared by the consumer (this package).
+type EventPublisher interface {
+	Publish(ctx context.Context, e events.TodoEvent)
 }
 
-// NewTodoService wires the service with its repository.
-func NewTodoService(repo TodoRepository) *TodoService {
-	return &TodoService{repo: repo, now: time.Now}
+// NoopPublisher discards events (tests, or when NATS isn't configured).
+type NoopPublisher struct{}
+
+// Publish does nothing.
+func (NoopPublisher) Publish(context.Context, events.TodoEvent) {}
+
+// TodoService implements todo use cases.
+type TodoService struct {
+	repo   TodoRepository
+	events EventPublisher
+	now    func() time.Time // injectable clock → deterministic tests
+}
+
+// NewTodoService wires the service with its repository and event publisher
+// (nil publisher = events disabled).
+func NewTodoService(repo TodoRepository, pub EventPublisher) *TodoService {
+	if pub == nil {
+		pub = NoopPublisher{}
+	}
+	return &TodoService{repo: repo, events: pub, now: time.Now}
+}
+
+// emit publishes a todo event. Called only AFTER a successful write.
+func (s *TodoService) emit(ctx context.Context, subject string, t *model.Todo) {
+	s.events.Publish(ctx, events.TodoEvent{
+		EventID:    uuid.NewString(),
+		Type:       subject,
+		OccurredAt: s.now().UTC(),
+		UserID:     t.UserID,
+		TodoID:     t.ID,
+		Title:      t.Title,
+	})
 }
 
 // WithClock overrides the clock (tests only).
@@ -100,6 +129,7 @@ func (s *TodoService) Create(ctx context.Context, userID string, in CreateTodoIn
 	if err := s.repo.Create(ctx, t); err != nil {
 		return nil, fmt.Errorf("create todo: %w", err)
 	}
+	s.emit(ctx, events.SubjectTodoCreated, t)
 	return t, nil
 }
 
@@ -138,6 +168,7 @@ func (s *TodoService) Update(ctx context.Context, userID, id string, in UpdateTo
 	if err != nil {
 		return nil, err
 	}
+	wasCompleted := t.Completed // decide the event type BEFORE applying changes
 
 	if in.Title != nil {
 		title := strings.TrimSpace(*in.Title)
@@ -168,10 +199,23 @@ func (s *TodoService) Update(ctx context.Context, userID, id string, in UpdateTo
 	if err := s.repo.Update(ctx, t); err != nil {
 		return nil, fmt.Errorf("update todo: %w", err)
 	}
+	if !wasCompleted && t.Completed {
+		s.emit(ctx, events.SubjectTodoCompleted, t)
+	} else {
+		s.emit(ctx, events.SubjectTodoUpdated, t)
+	}
 	return t, nil
 }
 
-// Delete removes a todo.
+// Delete removes a todo. It reads it first so the event can carry the title.
 func (s *TodoService) Delete(ctx context.Context, userID, id string) error {
-	return s.repo.Delete(ctx, userID, id)
+	t, err := s.repo.GetByID(ctx, userID, id)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.Delete(ctx, userID, id); err != nil {
+		return err
+	}
+	s.emit(ctx, events.SubjectTodoDeleted, t)
+	return nil
 }

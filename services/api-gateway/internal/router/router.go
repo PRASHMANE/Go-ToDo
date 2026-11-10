@@ -19,8 +19,9 @@ import (
 
 // Upstreams groups the reverse proxies.
 type Upstreams struct {
-	Auth *httputil.ReverseProxy
-	Todo *httputil.ReverseProxy
+	Auth     *httputil.ReverseProxy
+	Todo     *httputil.ReverseProxy
+	Activity *httputil.ReverseProxy
 }
 
 // New builds the gateway's gin.Engine: global middleware chain + routing table.
@@ -51,6 +52,7 @@ func New(cfg config.Config, log *slog.Logger, tm *auth.TokenManager, up Upstream
 
 	authProxy := proxy.Handler(up.Auth)
 	todoProxy := proxy.Handler(up.Todo)
+	activityProxy := proxy.Handler(up.Activity)
 	requireAuth := []gin.HandlerFunc{pkgmw.RequireJWT(tm), gwmw.ForwardUserID()}
 
 	v1 := r.Group("/api/v1")
@@ -65,6 +67,9 @@ func New(cfg config.Config, log *slog.Logger, tm *auth.TokenManager, up Upstream
 	todos := v1.Group("/todos", requireAuth...)
 	todos.Any("", todoProxy)       // /api/v1/todos
 	todos.Any("/*path", todoProxy) // /api/v1/todos/<anything>
+
+	activity := v1.Group("/activity", requireAuth...)
+	activity.GET("", activityProxy)
 
 	return r, nil
 }

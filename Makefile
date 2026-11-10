@@ -23,7 +23,7 @@ migrate-todo:    ## Apply todo-service migrations
 	migrate -path services/todo-service/migrations -database "$(TODO_DB_URL)" up
 
 run-todo:        ## Run todo-service locally (Postgres)
-	cd services/todo-service && DATABASE_URL="$(TODO_DB_URL)" go run ./cmd
+	cd services/todo-service && DATABASE_URL="$(TODO_DB_URL)" NATS_URL="nats://localhost:4222" go run ./cmd
 
 AUTH_DB_URL ?= postgres://auth_user:auth_pass@localhost:15432/auth_db?sslmode=disable
 JWT_SECRET  ?= dev-only-secret-change-me-dev-only-secret
@@ -66,3 +66,11 @@ lint:            ## golangci-lint on every module
 
 cover:           ## HTML coverage report for todo-service
 	cd services/todo-service && go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
+
+ACTIVITY_DB_URL ?= postgres://activity_user:activity_pass@localhost:15432/activity_db?sslmode=disable
+
+migrate-activity: ## Apply activity-service migrations
+	migrate -path services/activity-service/migrations -database "$(ACTIVITY_DB_URL)" up
+
+run-activity:    ## Run activity-service locally (needs `docker compose up -d nats`)
+	cd services/activity-service && DATABASE_URL="$(ACTIVITY_DB_URL)" go run ./cmd
