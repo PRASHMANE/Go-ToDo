@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { todosApi } from './api';
-import type { ListTodosParams, UpdateTodoInput } from './types';
+import type { ListTodosParams, ListTodosResponse, Todo, UpdateTodoInput } from './types';
 
 /** Central place for query keys. Never type them by hand elsewhere. */
 export const todoKeys = {
@@ -25,11 +25,34 @@ export function useCreateTodo() {
   });
 }
 
+function applyUpdate(todo: Todo, input: UpdateTodoInput): Todo {
+  const { clear_due_date, ...fields } = input;
+  return { ...todo, ...fields, ...(clear_due_date ? { due_date: null } : {}) };
+}
+
+/** Optimistic update: the UI changes instantly and rolls back if the request fails. */
 export function useUpdateTodo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateTodoInput }) => todosApi.update(id, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: todoKeys.all }),
+
+    // 1. before the request: patch every cached list immediately
+    onMutate: async ({ id, input }) => {
+      await qc.cancelQueries({ queryKey: todoKeys.lists() }); // don't let an in-flight fetch overwrite us
+      const previous = qc.getQueriesData<ListTodosResponse>({ queryKey: todoKeys.lists() });
+      qc.setQueriesData<ListTodosResponse>({ queryKey: todoKeys.lists() }, (old) =>
+        old ? { ...old, items: old.items.map((t) => (t.id === id ? applyUpdate(t, input) : t)) } : old,
+      );
+      return { previous }; // → becomes `context` below
+    },
+
+    // 2. on failure: put the snapshot back
+    onError: (_err, _vars, context) => {
+      context?.previous.forEach(([key, data]) => qc.setQueryData(key, data));
+    },
+
+    // 3. always: refetch so we end up with the server's truth (e.g. filters)
+    onSettled: () => qc.invalidateQueries({ queryKey: todoKeys.all }),
   });
 }
 
