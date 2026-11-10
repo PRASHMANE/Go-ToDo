@@ -1,10 +1,25 @@
+import { Route, Routes } from 'react-router';
+import { AppLayout } from './components/layout/AppLayout';
+import { ProtectedRoute } from './features/auth/ProtectedRoute';
+import { LoginPage } from './pages/LoginPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { TodosPage } from './pages/TodosPage';
 
 export default function App() {
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-6 text-3xl font-bold">Go-ToDo</h1>
-      <TodosPage />
-    </main>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+
+      {/* guard → layout → page */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<TodosPage />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
 }

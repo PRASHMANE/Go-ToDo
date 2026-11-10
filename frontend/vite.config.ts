@@ -9,7 +9,7 @@ export default defineConfig({
     // Dev proxy: the browser calls /api/... on :5173, Vite forwards it to the backend.
     // Same origin → no CORS problems in development.
     proxy: {
-      '/api': { target: 'http://localhost:8082', changeOrigin: true }, // todo-service for now; gateway (:8080) from F3
+      '/api': { target: 'http://localhost:8080', changeOrigin: true }, // the API gateway
     },
   },
 });
